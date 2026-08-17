@@ -6,14 +6,14 @@ Run the viewer from the repository root:
 python flightDynamics/main.py
 ```
 
-Choose an experiment by editing `EXPERIMENT` near the top of
+Choose a scenario by editing `SCENARIO` near the top of
 `flightDynamics/main.py`.
 
 - `open_loop`: starts from straight-and-level trim and accepts keyboard input.
 - `trim`: edit airspeed, climb angle, and turn radius in
-  `flightDynamics/experiments/trim.py`.
+  `flightDynamics/scenarios/trim.py`.
 - `control_surfaces`: edit elevator, throttle, aileron, and rudder in
-  `flightDynamics/experiments/control_surfaces.py`.
+  `flightDynamics/scenarios/control_surfaces.py`.
 
 Only `open_loop` accepts flight-control keys:
 
