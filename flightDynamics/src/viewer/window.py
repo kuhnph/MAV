@@ -11,11 +11,11 @@ class SimWindow(pyglet.window.Window):
     def __init__(self, sim_step_func, get_pose_func, get_sim_time_func, renderer_factory,
                  initial_controls=None,accepts_key_input=False,width=1000,height=800,
                  render_hz=60,sim_hz=None):
-        parameters = Params()
-        sim_hz = parameters.sim_hz if sim_hz is None else sim_hz
+        self.parameters = Params()
+        sim_hz = self.parameters.sim_hz if sim_hz is None else sim_hz
         super().__init__(width=width, height=height, caption="MAV Viewer (GPU)", resizable=True)
 
-        controls=parameters.u if initial_controls is None else initial_controls
+        controls=self.parameters.u if initial_controls is None else initial_controls
         self.del_e=controls[0,0]
         self.del_t=controls[1,0]
         self.del_a=controls[2,0]
@@ -57,6 +57,10 @@ class SimWindow(pyglet.window.Window):
             self.sim_step(self.sim_dt)
             self.accum -= self.sim_dt
 
+            if self.get_sim_time() >= self.parameters.end_sim:
+                self.close()
+                return
+
     def _render(self, _dt):
         self.dispatch_event("on_draw")
         self.flip()
@@ -89,6 +93,10 @@ class SimWindow(pyglet.window.Window):
             pass
 
     def on_key_press(self, symbol, modifiers):
+        if symbol == key.ESCAPE:
+            self.close()
+            return pyglet.event.EVENT_HANDLED
+        
         if not self.accepts_key_input:
             return
         if symbol == key.SPACE:

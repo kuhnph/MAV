@@ -1,12 +1,17 @@
 import sys
 from pathlib import Path
+import numpy as np
 
 project_dir=Path(__file__).parent
 sys.path.append(str(project_dir/"flightDynamics/src"))
 sys.path.append(str(project_dir/"flightDynamics"))
 
 # Choose "open_loop", "trim", or "control_surfaces".
-SCENARIO="open_loop"
+SCENARIO="dynamic_inversion"
+
+#SIGNAL
+from sim.signalGenerator import SignalGenerator
+SG = SignalGenerator()
 
 
 def load_scenario():
@@ -37,16 +42,28 @@ def main():
     logger=Logger()
     vertices,indices=aircraft_model_mesh(scale=5.0)
 
+    current_controls=parameters.u.copy()
+    
     def sim_step(dt):
+        nonlocal current_controls
         del dt
         for _ in range(max(1,int(round(parameters.speed_scale)))):
             if scenario.control_update is None:
-                u=window.u
+                current_controls=window.u
+                logger.log(dynamics.time,dynamics.state,current_controls)
             else:
-                print("hello world")
-                u=scenario.control_update(dynamics.time, dynamics.state.copy(),scenario.desired)
-            logger.log(dynamics.time,dynamics.state,u)
-            dynamics.update(u)
+                p_c = SG.square(dynamics.time,0.01,1/10)
+                # p_c = 0
+                q_c = 0.0
+                r_c = 0
+                omega_command = np.array([[p_c, q_c, r_c]]).T
+                current_controls=scenario.control_update(current_controls,dynamics.state.copy(),scenario.omega_dot_command,omega_command,)
+                logger.log(dynamics.time,dynamics.state,current_controls,omega_command)
+            
+            dynamics.update(current_controls)
+
+            #DEBUG
+            
 
 
     def get_pose():

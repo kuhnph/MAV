@@ -13,6 +13,8 @@ class Params:
         self._lateral_aerodynamics()
         self._derived_constants()
         self._initial_condition()
+        self._gains()
+        self._gains()
 
     def _simulation(self):
         self.speed_scale=8.0
@@ -21,6 +23,7 @@ class Params:
         self.time=0.0
         self.time_step=1.0/self.sim_hz
         self.nonzero_floor=1e-3
+        self.end_sim = 10
 
     def _environment(self):
         self.g=9.81
@@ -105,6 +108,14 @@ class Params:
             -0.1639169479601792,0.9995752159282119,
             -1.1218706735438058e-09,1.2740502677867338e-09,
         ],dtype=np.float64).reshape(4,1)
+
+    def _gains(self):
+        kp = 1
+        kq = 1
+        kr = 1
+        self.K_w = np.array([[kp, 0, 0], 
+                             [0, kq, 0],
+                             [0, 0, kr]])
 
     def body_to_inertial(self,phi,theta,psi):
         return body_to_inertial(phi,theta,psi,dtype=np.float64)

@@ -15,7 +15,8 @@ class Scenario:
     parameters: "Params"
     accepts_key_input: bool = False
     control_update: Callable[
-        [float, np.ndarray, np.ndarray],
+        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
         np.ndarray,
     ] | None = None
-    desired: np.ndarray | None = None
+    omega_dot_command: np.ndarray | None = None
+    omega_command: np.ndarray | None = None
