@@ -14,7 +14,6 @@ class Params:
         self._derived_constants()
         self._initial_condition()
         self._gains()
-        self._gains()
 
     def _simulation(self):
         self.speed_scale=8.0
@@ -23,7 +22,7 @@ class Params:
         self.time=0.0
         self.time_step=1.0/self.sim_hz
         self.nonzero_floor=1e-3
-        self.end_sim = 10
+        self.end_sim = 100
 
     def _environment(self):
         self.g=9.81
@@ -116,6 +115,13 @@ class Params:
         self.K_w = np.array([[kp, 0, 0], 
                              [0, kq, 0],
                              [0, 0, kr]])
+
+        k_phi = 1
+        k_theta = 1
+        k_psi = 1
+        self.K_eta = np.array([[k_phi, 0, 0], 
+                             [0, k_theta, 0],
+                             [0, 0, k_psi]])
 
     def body_to_inertial(self,phi,theta,psi):
         return body_to_inertial(phi,theta,psi,dtype=np.float64)

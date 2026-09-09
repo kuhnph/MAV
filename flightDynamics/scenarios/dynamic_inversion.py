@@ -2,11 +2,11 @@
 
 import numpy as np
 
-from control.dynamic_inversion import Controller
 from scenarios.setup import Scenario
 from sim.params import Params
 
-ELEVATOR=-0.1639
+# ELEVATOR=-0.1639
+ELEVATOR = 3
 THROTTLE=0.9996
 AILERON=0.0
 RUDDER=0.0
@@ -23,13 +23,11 @@ def build_scenario():
         [RUDDER],
     ], dtype=np.float64)
 
-    di_controller=Controller(parameters)
-
     return Scenario(
         name="Dynamic Inversion",
         description="DI controller commanding angular rates",
         parameters=parameters,
-        control_update=di_controller.control_loop,
+        controller_enabled=True,
         omega_dot_command=OMEGA_DOT_COMMAND.copy(),
         omega_command=OMEGA_COMMAND.copy(),
     )

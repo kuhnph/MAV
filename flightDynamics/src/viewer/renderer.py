@@ -100,7 +100,7 @@ class Renderer:
         self.znear = 0.1
         self.zfar = 5000.0
         self.camera_mode = "chase"
-        self.chase_offset = np.array([-250, -250, -600], dtype=np.float32)
+        self.chase_offset = np.array([-250, -20, -30], dtype=np.float32)
         self.fixed_eye = np.array([0, -600, 0], dtype=np.float32)
         self.fixed_target = np.array([0, 0, 0], dtype=np.float32)
 

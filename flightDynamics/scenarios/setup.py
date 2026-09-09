@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -14,9 +13,6 @@ class Scenario:
     description: str
     parameters: "Params"
     accepts_key_input: bool = False
-    control_update: Callable[
-        [np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-        np.ndarray,
-    ] | None = None
+    controller_enabled: bool = False
     omega_dot_command: np.ndarray | None = None
     omega_command: np.ndarray | None = None

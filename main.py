@@ -31,6 +31,7 @@ def load_scenario():
 def main():
     import pyglet
     from plotting.dataLogging import Logger
+    from control.dynamic_inversion import Controller
     from sim.dynamics import Dynamics
     from viewer.mesh import aircraft_model_mesh
     from viewer.renderer import Renderer
@@ -39,6 +40,7 @@ def main():
     scenario=load_scenario()
     parameters=scenario.parameters
     dynamics=Dynamics(parameters)
+    controller=Controller(parameters) if scenario.controller_enabled else None
     logger=Logger()
     vertices,indices=aircraft_model_mesh(scale=5.0)
 
@@ -48,21 +50,30 @@ def main():
         nonlocal current_controls
         del dt
         for _ in range(max(1,int(round(parameters.speed_scale)))):
-            if scenario.control_update is None:
+            #non controller logic
+            if controller is None:
                 current_controls=window.u
                 logger.log(dynamics.time,dynamics.state,current_controls)
+
+            #controller logic
             else:
-                p_c = SG.square(dynamics.time,0.01,1/10)
-                # p_c = 0
-                q_c = 0.0
-                r_c = 0
-                omega_command = np.array([[p_c, q_c, r_c]]).T
-                current_controls=scenario.control_update(current_controls,dynamics.state.copy(),scenario.omega_dot_command,omega_command,)
-                logger.log(dynamics.time,dynamics.state,current_controls,omega_command)
-            
+                phi_c = SG.square(dynamics.time,0.10,1/8) *0
+                phi_c = np.radians(6)
+                theta_c = SG.square(dynamics.time,0.15,1/10) *0
+                theta_c = np.radians(30)
+                psi_c = SG.square(dynamics.time,0.00,1/5) * 0
+                psi_c = np.radians(5)
+                eta_command = np.array([[phi_c, theta_c, psi_c]]).T
+                current_controls=controller.control_loop(
+                    current_controls,
+                    dynamics.state.copy(),
+                    eta_command,
+                )
+                logger.log(dynamics.time,dynamics.state,current_controls,eta_command)
             dynamics.update(current_controls)
 
-            #DEBUG
+
+
             
 
 

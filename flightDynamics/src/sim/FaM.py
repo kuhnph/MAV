@@ -3,6 +3,8 @@ from __future__ import annotations
 import numpy as np
 from numpy import cos,sin
 from sim.params import Params
+from sim.rotations import body_to_inertial
+
 
 
 class ForcesAndMoments:
@@ -10,15 +12,26 @@ class ForcesAndMoments:
         self.parameters=parameters or Params()
 
     def calculate(self,state,controls):
+
+        self.wind(state)
+
         #Inputs and aero measurements
         params=self.parameters
         u,v,w=state.item(3),state.item(4),state.item(5)
         phi,theta=state.item(6),state.item(7)
         p,q,r=state.item(9),state.item(10),state.item(11)
         delta_e,delta_t,delta_a,delta_r=(controls.item(index) for index in range(4))
-        airspeed=max(np.sqrt(u**2+v**2+w**2),params.nonzero_floor)
-        alpha=np.arctan2(w,u)
-        beta=np.arcsin(np.clip(v/airspeed,-1.0,1.0))
+
+        u_wind,v_wind,w_wind = [i[0] for i in self.stead_wind_body]
+
+
+        u_r = u - u_wind
+        v_r = v - v_wind
+        w_r = w - w_wind
+
+        airspeed=np.sqrt(u_r**2+v_r**2+w_r**2)
+        alpha=np.arctan2(w_r,u_r)
+        beta=np.arcsin(np.clip(v_r/airspeed,-1.0,1.0))
 
         #Coefficients
         numerator=1.0+np.exp(-params.stall_slope*(alpha-params.alpha0))+np.exp(
@@ -112,9 +125,9 @@ class ForcesAndMoments:
         ],dtype=np.float64)
 
         self.B_M = q_times_S*np.array([
-            [params.b*params.c_ell_delta_a, 0, params.b*params.c_ell_delta_r],
-            [0, params.c*params.c_m_delta_e, 0],
-            [params.b*params.c_n_delta_a, 0, params.b*params.c_n_delta_r]
+            [params.b*params.c_ell_delta_a,     0, params.b*params.c_ell_delta_r],
+            [0,       params.c*params.c_m_delta_e,                             0],
+            [params.b*params.c_n_delta_a,       0,   params.b*params.c_n_delta_r]
         ],dtype=np.float64)
         return forces,moments
 
@@ -142,3 +155,15 @@ class ForcesAndMoments:
         G_w = np.linalg.solve(J,self.B_M)
 
         return f_w, G_w
+
+
+    def wind(self,state):
+        phi   = state.item(6)
+        theta = state.item(7)
+        psi   = state.item(8)
+
+        self.stead_wind_ned = np.array([[0,3,0]]).T
+
+        R_bi = body_to_inertial(phi, theta, psi).T
+
+        self.stead_wind_body = R_bi @ self.stead_wind_ned

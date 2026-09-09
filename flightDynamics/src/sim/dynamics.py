@@ -29,11 +29,9 @@ class Dynamics:
         ell,pitch_moment,yaw_moment=(moments.item(index) for index in range(3))
 
         position_dot=body_to_inertial(phi,theta,psi,dtype=np.float64)@np.array([[u],[v],[w]])
-        velocity_dot=np.array([
-            [r*v-q*w],[p*w-r*u],[q*u-p*v],
-        ],dtype=np.float64)+(1.0/params.m)*np.array(
-            [[force_x],[force_y],[force_z]],dtype=np.float64
-        )
+        
+        velocity_dot=np.array([[r*v-q*w],[p*w-r*u],[q*u-p*v],],dtype=np.float64) + \
+        (1.0/params.m)*np.array([[force_x],[force_y],[force_z]],dtype=np.float64)
 
         euler_dot=np.array([
             [1.0,np.sin(phi)*np.tan(theta),np.cos(phi)*np.tan(theta)],
@@ -47,16 +45,8 @@ class Dynamics:
             [params.gamma_7*p*q-params.gamma_1*q*r+params.gamma_4*ell+params.gamma_8*yaw_moment],
         ],dtype=np.float64)
 
-        #DEBUG
-        self.angular_acceleration = angular_acceleration
-
         return np.concatenate([position_dot,velocity_dot,euler_dot,angular_acceleration],axis=0)
 
     def update(self,controls):
         self.rk4(controls)
         self.time+=self.time_step
-
-        #DEBUG
-        self.p_dot = self.angular_acceleration.item(0)
-        self.q_dot = self.angular_acceleration.item(1)
-        self.r_dot = self.angular_acceleration.item(2)
