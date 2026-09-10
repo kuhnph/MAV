@@ -75,7 +75,7 @@ def _condition(variables,target,parameters):
     desired[0,0]=target.airspeed*np.cos(climb_angle)
     desired[2,0]=-target.airspeed*np.sin(climb_angle)
     desired[8,0]=yaw_rate
-    derivative=Dynamics(parameters).derivative(state,controls)
+    derivative=Dynamics(parameters).f(state,controls)
 
     # Nondimensionalize groups of unlike derivatives so large translational
     # values do not dominate attitude and angular-rate errors in least squares.

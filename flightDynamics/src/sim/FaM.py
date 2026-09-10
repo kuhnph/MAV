@@ -6,15 +6,21 @@ from sim.params import Params
 from sim.rotations import body_to_inertial
 
 
-
+rng = np.random.default_rng()
 class ForcesAndMoments:
     def __init__(self,parameters: Params | None=None):
         self.parameters=parameters or Params()
+        self.xu = 0
+        self.xv1 = 0
+        self.xv2 = 0
+        self.xw1 = 0
+        self.xw2 = 0
+
+        self.wind_body = np.array([[0,0,0]]).T
+        self.alpha = 0
+        self.beta = 0
 
     def calculate(self,state,controls):
-
-        self.wind(state)
-
         #Inputs and aero measurements
         params=self.parameters
         u,v,w=state.item(3),state.item(4),state.item(5)
@@ -22,7 +28,7 @@ class ForcesAndMoments:
         p,q,r=state.item(9),state.item(10),state.item(11)
         delta_e,delta_t,delta_a,delta_r=(controls.item(index) for index in range(4))
 
-        u_wind,v_wind,w_wind = [i[0] for i in self.stead_wind_body]
+        u_wind,v_wind,w_wind = [i[0] for i in self.wind_body]
 
 
         u_r = u - u_wind
@@ -32,6 +38,8 @@ class ForcesAndMoments:
         airspeed=np.sqrt(u_r**2+v_r**2+w_r**2)
         alpha=np.arctan2(w_r,u_r)
         beta=np.arcsin(np.clip(v_r/airspeed,-1.0,1.0))
+        self.alpha = alpha
+        self.beta = beta
 
         #Coefficients
         numerator=1.0+np.exp(-params.stall_slope*(alpha-params.alpha0))+np.exp(
@@ -158,12 +166,64 @@ class ForcesAndMoments:
 
 
     def wind(self,state):
+        params=self.parameters
+
         phi   = state.item(6)
         theta = state.item(7)
         psi   = state.item(8)
 
-        self.stead_wind_ned = np.array([[0,3,0]]).T
+        self.stead_wind_ned = np.array([[0,0,0]]).T
 
         R_bi = body_to_inertial(phi, theta, psi).T
 
-        self.stead_wind_body = R_bi @ self.stead_wind_ned
+        stead_wind_body = R_bi @ self.stead_wind_ned
+
+        #Generate noise
+        dt = params.time_step
+        xi_u, xi_v, xi_w = rng.standard_normal(3)
+
+        n_u = xi_u / np.sqrt(dt)
+        n_v = xi_v / np.sqrt(dt)
+        n_w = xi_w / np.sqrt(dt)
+
+        #Calculate state derivatives
+        a_u = params.Va0 / params.Lu
+        a_v = params.Va0 / params.Lv
+        a_w = params.Va0 / params.Lw
+
+        #longitudinal derivative
+        xu_dot = -a_u * self.xu + n_u
+
+        #Lateral Derivatives
+        xv1_dot = self.xv2
+        xv2_dot = -(a_v**2)*self.xv1 - 2.0*a_v*self.xv2 + n_v
+
+        #Vertical derivatives
+        xw1_dot = self.xw2
+        xw2_dot = -(a_w**2)*self.xw1 - 2.0*a_w*self.xw2 + n_w
+
+        #Euler Integration
+        self.xu  += dt * xu_dot
+
+        self.xv1 += dt * xv1_dot
+        self.xv2 += dt * xv2_dot
+
+        self.xw1 += dt * xw1_dot
+        self.xw2 += dt * xw2_dot
+
+        #output
+        Ku = params.sigma_u * np.sqrt(2*params.Va0/params.Lu)
+        Kv = params.sigma_v * np.sqrt(3*params.Va0/params.Lv)
+        Kw = params.sigma_w * np.sqrt(3*params.Va0/params.Lw)
+
+        bv = params.Va0/(np.sqrt(3.0)*params.Lv)
+        bw = params.Va0/(np.sqrt(3.0)*params.Lw)
+
+        u_gust = Ku*self.xu
+        v_gust = Kv*(bv*self.xv1 + self.xv2)
+        w_gust = Kw*(bw*self.xw1 + self.xw2)
+
+        gust_body = np.array([[u_gust,v_gust,w_gust]]).T
+
+        #DEBUG no wind
+        self.wind_body = gust_body + stead_wind_body

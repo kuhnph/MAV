@@ -11,6 +11,8 @@ class Dynamics:
         self.state=self.parameters.state0.copy()
         self.time_step=float(self.parameters.time_step)
         self.time=float(self.parameters.time)
+        self.wind_body = np.array([[0,0,0]]).T
+        self.aero = np.array([[0,0]]).T
 
     def rk4(self,controls):
         f_1=self.f(self.state,controls)
@@ -48,5 +50,8 @@ class Dynamics:
         return np.concatenate([position_dot,velocity_dot,euler_dot,angular_acceleration],axis=0)
 
     def update(self,controls):
+        self.forces_and_moments.wind(self.state)
+        self.wind_body = self.forces_and_moments.wind_body
+        self.aero = np.array([[self.forces_and_moments.alpha, self.forces_and_moments.beta]]).T
         self.rk4(controls)
         self.time+=self.time_step

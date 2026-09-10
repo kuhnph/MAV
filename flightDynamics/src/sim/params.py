@@ -8,6 +8,7 @@ class Params:
     def __init__(self):
         self._simulation()
         self._environment()
+        self._wind()
         self._aircraft()
         self._longitudinal_aerodynamics()
         self._lateral_aerodynamics()
@@ -27,6 +28,16 @@ class Params:
     def _environment(self):
         self.g=9.81
         self.rho=1.2683
+
+    def _wind(self):
+        # Configurable starting values for the gust filters.
+        self.Va0=20.0  # Reference airspeed (m/s).
+        self.Lu=200.0  # Longitudinal turbulence length scale (m).
+        self.Lv=200.0  # Lateral turbulence length scale (m).
+        self.Lw=50.0   # Vertical turbulence length scale (m).
+        self.sigma_u=0.05  # Longitudinal gust standard deviation (m/s).
+        self.sigma_v=0.05  # Lateral gust standard deviation (m/s).
+        self.sigma_w=0.05  # Vertical gust standard deviation (m/s).
 
     def _aircraft(self):
         self.m=1.56

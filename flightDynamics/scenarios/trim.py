@@ -6,8 +6,8 @@ from sim.params import Params
 
 # Edit the desired flight condition here.
 AIRSPEED=20.0
-CLIMB_ANGLE_DEG=0.0
-TURN_RADIUS=100
+CLIMB_ANGLE_DEG=1.0
+TURN_RADIUS=1e9
 
 
 def build_scenario():

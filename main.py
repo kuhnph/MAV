@@ -7,7 +7,7 @@ sys.path.append(str(project_dir/"flightDynamics/src"))
 sys.path.append(str(project_dir/"flightDynamics"))
 
 # Choose "open_loop", "trim", or "control_surfaces".
-SCENARIO="dynamic_inversion"
+SCENARIO="trim"
 
 #SIGNAL
 from sim.signalGenerator import SignalGenerator
@@ -53,23 +53,23 @@ def main():
             #non controller logic
             if controller is None:
                 current_controls=window.u
-                logger.log(dynamics.time,dynamics.state,current_controls)
+                logger.log(dynamics.time,dynamics.state,current_controls,wind=dynamics.wind_body)
 
             #controller logic
             else:
-                phi_c = SG.square(dynamics.time,0.10,1/8) *0
-                phi_c = np.radians(6)
-                theta_c = SG.square(dynamics.time,0.15,1/10) *0
-                theta_c = np.radians(30)
-                psi_c = SG.square(dynamics.time,0.00,1/5) * 0
-                psi_c = np.radians(5)
+                # phi_c = SG.square(dynamics.time,0.10,1/8) *0
+                phi_c = 1.15e-8
+                # theta_c = SG.square(dynamics.time,0.15,1/10) *0
+                theta_c = 3.09e-1
+                # psi_c = SG.square(dynamics.time,0.00,1/5) * 0
+                psi_c = np.radians(0)
                 eta_command = np.array([[phi_c, theta_c, psi_c]]).T
                 current_controls=controller.control_loop(
                     current_controls,
                     dynamics.state.copy(),
                     eta_command,
                 )
-                logger.log(dynamics.time,dynamics.state,current_controls,eta_command)
+                logger.log(dynamics.time,dynamics.state,current_controls,eta_command,dynamics.wind_body,dynamics.aero)
             dynamics.update(current_controls)
 
 
@@ -94,11 +94,16 @@ def main():
         sim_hz=parameters.sim_hz,
     )
     print(f"Running {scenario.name}: {scenario.description}")
-    try:
+
+    LOGGING = True
+    if LOGGING:
+        try:
+            pyglet.app.run()
+        finally:
+            print("Exporting telemetry")
+            logger.export()
+    else:
         pyglet.app.run()
-    finally:
-        print("Exporting telemetry")
-        logger.export()
 
 
 if __name__=="__main__":
