@@ -11,7 +11,7 @@ OMEGA_COMMAND=np.array([[0.001],[0.0],[0.0]],dtype=np.float64)
 OMEGA_DOT_COMMAND=np.zeros((3,1),dtype=np.float64)
 
 # Edit the desired flight condition here.
-AIRSPEED=20.0
+AIRSPEED=40.0
 CLIMB_ANGLE_DEG=1.0
 TURN_RADIUS=1e9
 
@@ -26,6 +26,7 @@ def build_scenario():
     )
     solution=solve_trim(parameters,target)
     parameters.state0=solution.state
+    parameters.u=solution.controls
     return Scenario(
         name="Dynamic Inversion",
         description="DI controller commanding angular rates",

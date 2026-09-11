@@ -79,10 +79,28 @@ def main():
         state=dynamics.state
         return tuple(float(state[index,0]) for index in (0,1,2,6,7,8))
 
+    def get_tracking():
+        # Controller command order is p, q, r, phi, theta, psi.
+        commands = getattr(controller, "commanded_states", None)
+        names = ("Roll (deg)", "Pitch (deg)", "Yaw (deg)",
+                 "p (deg/s)", "q (deg/s)", "r (deg/s)")
+        rows = []
+        for index, name in enumerate(names):
+            actual = float(np.rad2deg(dynamics.state[6 + index, 0]))
+            commanded = None
+            if controller is not None:
+                if index < 3:
+                    commanded = float(np.rad2deg(eta_command[index, 0]))
+                elif commands is not None:
+                    commanded = float(np.rad2deg(commands[index - 3, 0]))
+            rows.append((name, actual, commanded))
+        return rows
+
     window=SimWindow(
         sim_step_func=sim_step,
         get_pose_func=get_pose,
         get_sim_time_func=lambda: dynamics.time,
+        get_tracking_func=get_tracking,
         renderer_factory=lambda ctx: Renderer(ctx,vertices,indices),
         initial_controls=parameters.u,
         accepts_key_input=scenario.accepts_key_input,

@@ -10,10 +10,11 @@ from sim.params import Params
 class SimWindow(pyglet.window.Window):
     def __init__(self, sim_step_func, get_pose_func, get_sim_time_func, renderer_factory,
                  initial_controls=None,accepts_key_input=False,width=1000,height=800,
-                 render_hz=60,sim_hz=None):
+                 render_hz=60,sim_hz=None,get_tracking_func=None):
         self.parameters = Params()
         sim_hz = self.parameters.sim_hz if sim_hz is None else sim_hz
         super().__init__(width=width, height=height, caption="MAV Viewer (GPU)", resizable=True)
+        self.set_location(100,70)
 
         controls=self.parameters.u if initial_controls is None else initial_controls
         self.del_e=controls[0,0]
@@ -28,6 +29,7 @@ class SimWindow(pyglet.window.Window):
         self.sim_step = sim_step_func
         self.get_pose = get_pose_func
         self.get_sim_time = get_sim_time_func
+        self.get_tracking = get_tracking_func
         self.sim_dt = 1.0 / sim_hz
         self.accum = 0.0
         self.last = time.perf_counter()
@@ -41,6 +43,19 @@ class SimWindow(pyglet.window.Window):
             anchor_y="top",
             color=(255, 255, 255, 255),
         )
+        self.tracking_labels = []
+        if self.get_tracking is not None:
+            for row in range(7):
+                self.tracking_labels.append(pyglet.text.Label(
+                    "",
+                    font_name="DejaVu Sans Mono",
+                    font_size=12,
+                    x=10,
+                    y=self.height - 40 - row * 22,
+                    anchor_x="left",
+                    anchor_y="top",
+                    color=(255, 255, 255, 255),
+                ))
         pyglet.clock.schedule(self._tick)
         pyglet.clock.schedule_interval(self._render, 1.0 / render_hz)
 
@@ -78,6 +93,14 @@ class SimWindow(pyglet.window.Window):
         sim_t = self.get_sim_time()
         self.time_label.text = f"t = {sim_t:8.2f} s"
         self.time_label.y = self.height - 10
+        if self.get_tracking is not None:
+            rows = [f"{'State':<15}{'Actual':>11}{'Commanded':>12}"]
+            for name, actual, commanded in self.get_tracking():
+                command_text = "--" if commanded is None else f"{commanded:.2f}"
+                rows.append(f"{name:<15}{actual:>11.2f}{command_text:>12}")
+            for row, (label, text) in enumerate(zip(self.tracking_labels, rows)):
+                label.text = text
+                label.y = self.height - 40 - row * 22
 
         try:
             self.ctx.screen.use()
@@ -86,6 +109,8 @@ class SimWindow(pyglet.window.Window):
             pass
 
         self.time_label.draw()
+        for label in self.tracking_labels:
+            label.draw()
 
         try:
             self.ctx.enable(moderngl.DEPTH_TEST)

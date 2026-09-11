@@ -17,7 +17,7 @@ class Params:
         self._gains()
 
     def _simulation(self):
-        self.speed_scale=4.0
+        self.speed_scale=3.0
         self.sim_hz=200
         self.render_hz=60
         self.time=0.0
