@@ -17,13 +17,13 @@ class Params:
         self._gains()
 
     def _simulation(self):
-        self.speed_scale=8.0
+        self.speed_scale=4.0
         self.sim_hz=200
         self.render_hz=60
         self.time=0.0
         self.time_step=1.0/self.sim_hz
         self.nonzero_floor=1e-3
-        self.end_sim = 100
+        self.end_sim = 10e6
 
     def _environment(self):
         self.g=9.81
@@ -115,21 +115,23 @@ class Params:
         ],dtype=np.float64).reshape(12,1)
         # Control order: elevator,throttle,aileron,rudder
         self.u=np.array([
-            -0.1639169479601792,0.9995752159282119,
-            -1.1218706735438058e-09,1.2740502677867338e-09,
+            -1.65097275e-01,
+             9.25892619e-01,
+            -8.74552214e-10,
+             1.66177574e-09,
         ],dtype=np.float64).reshape(4,1)
 
     def _gains(self):
-        kp = 1
-        kq = 1
-        kr = 1
+        kp = 8
+        kq = 8
+        kr = 8
         self.K_w = np.array([[kp, 0, 0], 
                              [0, kq, 0],
                              [0, 0, kr]])
 
-        k_phi = 1
-        k_theta = 1
-        k_psi = 1
+        k_phi = 2
+        k_theta = 2
+        k_psi = 2
         self.K_eta = np.array([[k_phi, 0, 0], 
                              [0, k_theta, 0],
                              [0, 0, k_psi]])

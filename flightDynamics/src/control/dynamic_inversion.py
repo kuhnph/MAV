@@ -12,7 +12,7 @@ class Controller:
         self.params=parameters
         self.forces_and_moments=ForcesAndMoments(parameters)
     
-    def control_loop(self,u,state,eta_c,etaDot_c=0):
+    def control_loop(self,u,state,eta_c):
         f_w,G_w = self.forces_and_moments.calculate_G_AND_f(state,u)
 
 
@@ -26,15 +26,30 @@ class Controller:
             [0, c(phi)         , -s(phi)],
             [0, s(phi)/c(theta), c(phi)/c(theta)]
         ])
-
+        etaDot_c = 0
         nu_outer = etaDot_c + self.params.K_eta @ (eta_c - eta)
         omega_c = np.linalg.solve(T,nu_outer)
 
-
-        #Calculate u (inner loop)
-        omegaDot_c = 0
+        #Calculate feed-forward term for inner loop
         p,q,r=state.item(9),state.item(10),state.item(11)
         omega = np.array([[p,q,r]]).T
+        etaDDot_c = np.array([[0,0,0]]).T
+        etaDot = T@omega
+        thetaDot = etaDot.item(1)
+        phiDot = etaDot.item(0)
+        Tone = np.array([[0, c(phi)*t(theta)  , -s(phi)*t(theta)],
+                         [0, -s(phi)          , -c(phi)],
+                         [0, c(phi)*1/c(theta), -s(phi)*1/c(theta)]]) * phiDot
+        Ttwo = np.array([[0, s(phi)/c(theta)**2, c(phi)/c(theta)**2],
+                         [0, 0                    , 0],
+                         [0, s(phi)*s(theta)/c(theta)**2, c(phi)*s(theta)/c(theta)**2]]) * thetaDot
+        TDot = Tone + Ttwo
+        nuDot_outer = etaDDot_c + self.params.K_eta@(etaDot_c-etaDot)
+        omegaDot_c = np.linalg.solve(T,nuDot_outer-TDot@omega_c)
+        omegaDot_c = 0
+
+
+        #Calculate u (inner loop)
         nu_inner = omegaDot_c+self.params.K_w@(omega_c-omega)
         u_controlled=np.linalg.solve(G_w,nu_inner-f_w)
 
@@ -54,6 +69,8 @@ class Controller:
             [aileron_commanded],
             [rudder_commanded],
         ],dtype=np.float64)
+
+        self.commanded_states = np.concatenate((omega_c,eta_c))
 
         return u_commanded
 

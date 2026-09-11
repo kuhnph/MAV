@@ -7,7 +7,7 @@ sys.path.append(str(project_dir/"flightDynamics/src"))
 sys.path.append(str(project_dir/"flightDynamics"))
 
 # Choose "open_loop", "trim", or "control_surfaces".
-SCENARIO="trim"
+SCENARIO="dynamic_inversion"
 
 #SIGNAL
 from sim.signalGenerator import SignalGenerator
@@ -32,6 +32,7 @@ def main():
     import pyglet
     from plotting.dataLogging import Logger
     from control.dynamic_inversion import Controller
+    from control.terminal_commands import TerminalCommands
     from sim.dynamics import Dynamics
     from viewer.mesh import aircraft_model_mesh
     from viewer.renderer import Renderer
@@ -45,10 +46,14 @@ def main():
     vertices,indices=aircraft_model_mesh(scale=5.0)
 
     current_controls=parameters.u.copy()
+    eta_command = np.array([[0.0], [7.09205215e-02], [0.0]])
+    terminal_commands = TerminalCommands() if controller is not None else None
     
     def sim_step(dt):
         nonlocal current_controls
         del dt
+        if terminal_commands is not None:
+            terminal_commands.apply(eta_command)
         for _ in range(max(1,int(round(parameters.speed_scale)))):
             #non controller logic
             if controller is None:
@@ -57,19 +62,12 @@ def main():
 
             #controller logic
             else:
-                # phi_c = SG.square(dynamics.time,0.10,1/8) *0
-                phi_c = 1.15e-8
-                # theta_c = SG.square(dynamics.time,0.15,1/10) *0
-                theta_c = 3.09e-1
-                # psi_c = SG.square(dynamics.time,0.00,1/5) * 0
-                psi_c = np.radians(0)
-                eta_command = np.array([[phi_c, theta_c, psi_c]]).T
                 current_controls=controller.control_loop(
                     current_controls,
                     dynamics.state.copy(),
                     eta_command,
                 )
-                logger.log(dynamics.time,dynamics.state,current_controls,eta_command,dynamics.wind_body,dynamics.aero)
+                logger.log(dynamics.time,dynamics.state,current_controls,controller.commanded_states,dynamics.wind_body,dynamics.aero)
             dynamics.update(current_controls)
 
 
@@ -94,6 +92,8 @@ def main():
         sim_hz=parameters.sim_hz,
     )
     print(f"Running {scenario.name}: {scenario.description}")
+    if terminal_commands is not None:
+        terminal_commands.start()
 
     LOGGING = True
     if LOGGING:

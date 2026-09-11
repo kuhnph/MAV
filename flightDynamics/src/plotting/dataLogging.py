@@ -13,7 +13,7 @@ class Logger:
         self.wind=[]
         self.aero=[]
 
-    def log(self,time,state,controls, commands=np.array([[None, None, None]]).T, wind=np.array([[None, None, None]]).T,aero=np.array([[None, None]]).T):
+    def log(self,time,state,controls, commands=np.array([[None, None, None, None, None, None]]).T, wind=np.array([[None, None, None]]).T,aero=np.array([[None, None]]).T):
         self.time.append(time)
         self.states.append(state.ravel().copy())
         self.controls.append(controls.ravel().copy())
@@ -22,6 +22,9 @@ class Logger:
         self.aero.append(aero.ravel().copy())
 
     def export(self):
+        if not self.time:
+            print("No telemetry samples to export.")
+            return
         time=np.asarray(self.time,dtype=np.float32)
         states=np.asarray(self.states,dtype=np.float32)
         controls=np.asarray(self.controls,dtype=np.float32)
@@ -30,7 +33,7 @@ class Logger:
         aero=np.asarray(self.aero,dtype=np.float32)
         state_columns=["pn","pe","pd","u","v","w","phi","theta","psi","p","q","r"]
         control_columns=["del_e","del_t","del_a","del_r"]
-        command_columns=['pc','qc','rc']
+        command_columns=['p_c','q_c','r_c','phi_c', 'theta_c', 'psi_c']
         wind_columns=['uw','vw','ww']
         aero_columns=['alpha','beta']
         state_frame=pd.DataFrame(states,columns=state_columns)

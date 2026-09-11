@@ -227,3 +227,4 @@ class ForcesAndMoments:
 
         #DEBUG no wind
         self.wind_body = gust_body + stead_wind_body
+        self.wind_body = np.array([[0,0,0]]).T
